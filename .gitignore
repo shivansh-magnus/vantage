@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Project-specific
+.env
+data/raw/*
+!data/raw/.gitkeep
+runs/*
+!runs/.gitkeep
+mlruns/
+*.parquet
+
+# Skip HTML field guides
+*.html
