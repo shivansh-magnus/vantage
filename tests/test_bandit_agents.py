@@ -65,27 +65,65 @@ def test_ucb1_selection_logic():
     agent = UCB1(prices)
     
     # Trigger cold start updates
-    agent.update(0, 1.0) # Q(0) = 1.0, N(0) = 1
-    agent.update(1, 0.0) # Q(1) = 0.0, N(1) = 1
+    agent.update(0, 1.0) # Q(0) = 1.0, N(0) = 1 (reward > 0 -> purchase_outcome = 1.0)
+    agent.update(1, 0.0) # Q(1) = 0.0, N(1) = 1 (reward = 0 -> purchase_outcome = 0.0)
     
     # Current total_rounds (t) = 2
-    # UCB score for arm 0: Q(0) + sqrt(2 * ln(t) / N(0)) = 1.0 + sqrt(2 * ln(2) / 1) = 1.0 + 1.1774 = 2.1774
-    # UCB score for arm 1: Q(1) + sqrt(2 * ln(t) / N(1)) = 0.0 + sqrt(2 * ln(2) / 1) = 0.0 + 1.1774 = 1.1774
-    # Since 2.1774 > 1.1774, it should choose arm 0
-    assert agent.select_arm() == 0
+    # UCB score for arm 0: price * (Q(0) + sqrt(2 * ln(t) / N(0))) = 10.0 * (1.0 + sqrt(2 * ln(2) / 1)) = 10.0 * 2.1774 = 21.774
+    # UCB score for arm 1: price * (Q(1) + sqrt(2 * ln(t) / N(1))) = 20.0 * (0.0 + sqrt(2 * ln(2) / 1)) = 20.0 * 1.1774 = 23.548
+    # Since 23.548 > 21.774, it should choose arm 1
+    assert agent.select_arm() == 1
     
-    # Now pull arm 0 again and observe 0 reward
-    agent.update(0, 0.0) # Q(0) = (1.0 + 0.0) / 2 = 0.5, N(0) = 2
+    # Now pull arm 1 again and observe 0 reward
+    agent.update(1, 0.0) # Q(1) = 0.0, N(1) = 2
     # Now t = 3
-    # UCB score for arm 0: 0.5 + sqrt(2 * ln(3) / 2) = 0.5 + 1.0481 = 1.5481
-    # UCB score for arm 1: 0.0 + sqrt(2 * ln(3) / 1) = 0.0 + 1.4823 = 1.4823
-    # 1.5481 > 1.4823, still arm 0
+    # UCB score for arm 0: 10.0 * (1.0 + sqrt(2 * ln(3) / 1)) = 10.0 * (1.0 + 1.4823) = 24.823
+    # UCB score for arm 1: 20.0 * (0.0 + sqrt(2 * ln(3) / 2)) = 20.0 * (0.0 + 1.0481) = 20.962
+    # Since 24.823 > 20.962, it should now choose arm 0
     assert agent.select_arm() == 0
     
     # Update arm 0 again with 0 reward
-    agent.update(0, 0.0) # Q(0) = (1.0 + 0.0 + 0.0) / 3 = 0.3333, N(0) = 3
+    agent.update(0, 0.0) # Q(0) = 0.5, N(0) = 2
     # Now t = 4
-    # UCB score for arm 0: 0.3333 + sqrt(2 * ln(4) / 3) = 0.3333 + 0.9612 = 1.2945
-    # UCB score for arm 1: 0.0 + sqrt(2 * ln(4) / 1) = 0.0 + 1.6651 = 1.6651
-    # 1.6651 > 1.2945, so now it should switch to arm 1!
+    # UCB score for arm 0: 10.0 * (0.5 + sqrt(2 * ln(4) / 2)) = 10.0 * (0.5 + 1.1774) = 16.774
+    # UCB score for arm 1: 20.0 * (0.0 + sqrt(2 * ln(4) / 2)) = 20.0 * (0.0 + 1.1774) = 23.548
+    # Since 23.548 > 16.774, it should choose arm 1
     assert agent.select_arm() == 1
+
+
+def test_ucb1_sublinear_regret():
+    from vantage.schemas import CustomerContext
+    from vantage.tools.simulator import MarketSimulator
+    from vantage.tools.optimization import find_optimal_price
+    
+    prices = [10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 60.0, 80.0]
+    agent = UCB1(prices, rng=np.random.default_rng(42))
+    sim = MarketSimulator(seed=42)
+    context = CustomerContext(segment="default", day_type="weekday", competitor_price=20.0)
+    _, optimal_rev = find_optimal_price(context, sim)
+    
+    regrets = []
+    cumulative_regret = 0.0
+    
+    for _ in range(2000):
+        arm_idx = agent.select_arm()
+        chosen_price = prices[arm_idx]
+        outcome = sim.step(chosen_price, context)
+        reward = chosen_price * outcome
+        
+        prob = sim.purchase_probability(chosen_price, context)
+        expected_reward = chosen_price * prob
+        instant_regret = optimal_rev - expected_reward
+        cumulative_regret += instant_regret
+        regrets.append(cumulative_regret)
+        
+        agent.update(arm_idx, reward)
+        
+    regret_first_half = regrets[999]
+    regret_second_half = regrets[1999] - regrets[999]
+    
+    # Regret in the second half must be significantly smaller than in the first half
+    # demonstrating learning and sub-linear regret growth
+    assert regret_second_half < regret_first_half * 0.7
+
+
