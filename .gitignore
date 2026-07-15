@@ -17,6 +17,7 @@ runs/*
 !runs/.gitkeep
 mlruns/
 *.parquet
+interview/*
 
 # Skip HTML field guides
 *.html
