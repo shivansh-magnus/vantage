@@ -67,20 +67,26 @@ class UCB1(BanditAgent):
     UCB1 (Upper Confidence Bound) Bandit Agent.
     """
     
+    def update(self, arm_idx: int, reward: float) -> None:
+        # UCB1 tracks purchase probability (binary 0/1 outcome), not revenue
+        purchase_outcome = 1.0 if reward > 0.0 else 0.0
+        super().update(arm_idx, purchase_outcome)
+
     def select_arm(self) -> int:
         # Cold start: pull every arm once in round-robin order
         untried = np.where(self.counts == 0)[0]
         if len(untried) > 0:
             return int(untried[0])
             
-        # UCB1 decision rule: argmax_a [ Q(a) + sqrt(2 * ln(t) / N(a)) ]
+        # UCB1 decision rule: argmax_a [ price_a * ( Q(a) + sqrt(2 * ln(t) / N(a)) ) ]
         ucb_values = np.zeros(self.k_arms)
         for a in range(self.k_arms):
             bonus = np.sqrt((2.0 * np.log(self.total_rounds)) / self.counts[a])
-            ucb_values[a] = self.q_estimates[a] + bonus
+            ucb_values[a] = self.prices[a] * (self.q_estimates[a] + bonus)
             
         # Resolve ties randomly
         max_ucb = np.max(ucb_values)
         best_arms = np.where(ucb_values == max_ucb)[0]
         return int(self.rng.choice(best_arms))
+
 

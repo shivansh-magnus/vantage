@@ -9,6 +9,11 @@ from vantage.agents.bandit_agents import EpsilonGreedy, UCB1
 def run_simulation(agent_class, agent_kwargs, context, prices, optimal_rev, n_rounds, seed):
     # Re-initialize simulator with the specific seed for reproducibility
     sim = MarketSimulator(seed=seed)
+    
+    # Pre-calculate purchase probabilities and expected rewards for all prices to speed up the loop
+    arm_probs = [sim.purchase_probability(p, context) for p in prices]
+    arm_expected_rewards = [p * prob for p, prob in zip(prices, arm_probs)]
+    
     # Create an isolated numpy random Generator for the agent to ensure fully independent and reproducible logic
     agent_rng = np.random.default_rng(seed)
     agent = agent_class(prices, rng=agent_rng, **agent_kwargs)
@@ -21,15 +26,12 @@ def run_simulation(agent_class, agent_kwargs, context, prices, optimal_rev, n_ro
         chosen_price = prices[arm_idx]
         
         # Pull the arm: simulate customer interaction (stochastic Bernoulli outcome)
-        outcome = sim.step(chosen_price, context)
+        # Using pre-calculated probability to avoid dot-product and matrix overhead inside the loop
+        outcome = int(sim.rng.random() < arm_probs[arm_idx])
         reward = chosen_price * outcome
         
-        # Calculate expected reward (revenue) for the chosen price to compute regret
-        prob = sim.purchase_probability(chosen_price, context)
-        expected_reward = chosen_price * prob
-        
         # Regret = Optimal Expected Revenue - Expected Reward of Chosen Arm
-        instant_regret = optimal_rev - expected_reward
+        instant_regret = optimal_rev - arm_expected_rewards[arm_idx]
         cumulative_regret += instant_regret
         regrets.append(cumulative_regret)
         
@@ -37,6 +39,7 @@ def run_simulation(agent_class, agent_kwargs, context, prices, optimal_rev, n_ro
         agent.update(arm_idx, reward)
         
     return np.array(regrets), agent.counts
+
 
 def main():
     # 1. Configuration
@@ -85,6 +88,11 @@ def main():
     # Calculate Mean Regrets over all seeds
     egreedy_mean_regrets = np.mean(egreedy_regrets_all, axis=0)
     ucb1_mean_regrets = np.mean(ucb1_regrets_all, axis=0)
+    
+    print(f"\nFinal Mean Cumulative Regret (at T={n_rounds}):")
+    print(f"Epsilon-Greedy (e=0.1): ${egreedy_mean_regrets[-1]:.2f}")
+    print(f"UCB1:                   ${ucb1_mean_regrets[-1]:.2f}")
+
     
     # 3. Print Pull Distributions
     print("\nArm Pull Distribution (Averaged over all seeds):")
