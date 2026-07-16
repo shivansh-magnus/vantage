@@ -50,7 +50,7 @@ def main():
     context = CustomerContext(
         segment="professional", day_type="weekday", competitor_price=25.0
     )
-    prices = [10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 65.0, 80.0]
+    prices = [10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 65.0, 80.0, 85.0, 90.0, 95.0]
 
     sim = MarketSimulator(seed=0)
     optimal_price, optimal_rev = find_optimal_price(context, sim)

@@ -16,7 +16,7 @@ class ThompsonSampling(BanditAgent):
         self.alpha = np.ones(self.k_arms)
         self.beta = np.ones(self.k_arms)
 
-    def select_arm(self) -> int:
+    def select_arm(self, context: Optional[np.ndarray] = None) -> int:
         # Draw one posterior sample per arm this round.
         sampled_probs = self.rng.beta(self.alpha, self.beta)
 
@@ -27,7 +27,7 @@ class ThompsonSampling(BanditAgent):
 
         return int(np.argmax(sampled_revenue))
 
-    def update(self, arm_idx: int, reward: float) -> None:
+    def update(self, arm_idx: int, reward: float, context: Optional[np.ndarray] = None) -> None:
         self.total_rounds += 1
         self.counts[arm_idx] += 1
 
