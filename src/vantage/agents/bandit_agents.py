@@ -17,7 +17,7 @@ class BanditAgent(ABC):
         self.rng = rng if rng is not None else np.random.default_rng()
 
     @abstractmethod
-    def select_arm(self) -> int:
+    def select_arm(self, context: Optional[np.ndarray] = None) -> int:
         """
         Selects which arm index to pull next.
         Returns:
@@ -25,7 +25,7 @@ class BanditAgent(ABC):
         """
         pass
 
-    def update(self, arm_idx: int, reward: float) -> None:
+    def update(self, arm_idx: int, reward: float, context: Optional[np.ndarray] = None) -> None:
         """
         Updates the empirical expected reward (Q) for the pulled arm using the incremental mean rule.
         """
@@ -46,7 +46,7 @@ class EpsilonGreedy(BanditAgent):
         super().__init__(prices, rng=rng)
         self.epsilon = epsilon
 
-    def select_arm(self) -> int:
+    def select_arm(self, context: Optional[np.ndarray] = None) -> int:
         # Cold start phase: pull any untried arm first
         untried = np.where(self.counts == 0)[0]
         if len(untried) > 0:
@@ -67,12 +67,12 @@ class UCB1(BanditAgent):
     UCB1 (Upper Confidence Bound) Bandit Agent.
     """
     
-    def update(self, arm_idx: int, reward: float) -> None:
+    def update(self, arm_idx: int, reward: float, context: Optional[np.ndarray] = None) -> None:
         # UCB1 tracks purchase probability (binary 0/1 outcome), not revenue
         purchase_outcome = 1.0 if reward > 0.0 else 0.0
-        super().update(arm_idx, purchase_outcome)
+        super().update(arm_idx, purchase_outcome, context=context)
 
-    def select_arm(self) -> int:
+    def select_arm(self, context: Optional[np.ndarray] = None) -> int:
         # Cold start: pull every arm once in round-robin order
         untried = np.where(self.counts == 0)[0]
         if len(untried) > 0:
