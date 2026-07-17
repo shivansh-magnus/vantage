@@ -34,47 +34,16 @@ Vantage/
 │       └── linucb_agent.py     # Disjoint and Segment-Separated LinUCB implementations
 ├── scripts/
 │   ├── new_evaluate_all_agents.py # 5-way regret comparison, convergence, & sensitivity sweeps
-│   ├── evaluate_bandit_agents.py  # Day 2 regret script
-│   ├── evaluate_linucb.py         # Day 4 convergence script
+│   ├── evaluate_bandit_agents.py  # Regret evaluation script
+│   ├── evaluate_linucb.py         # Convergence evaluation script
 │   └── generate_ground_truth.py   # Ground-truth table compiler
-├── tests/
-│   ├── test_simulator.py       # Simulator validation tests
-│   ├── test_optimization.py    # SciPy optimizer tests
-│   ├── test_bandit_agents.py   # EpsilonGreedy & UCB1 test suite
-│   ├── test_thompson_sampling.py# Thompson Sampling test suite
-│   └── test_linucb_agent.py    # LinUCB & Segment-Separated LinUCB test suite
-└── interview/                  # Complete field guides, study guides, and bug reports
+└── tests/
+    ├── test_simulator.py       # Simulator validation tests
+    ├── test_optimization.py    # SciPy optimizer tests
+    ├── test_bandit_agents.py   # EpsilonGreedy & UCB1 test suite
+    ├── test_thompson_sampling.py# Thompson Sampling test suite
+    └── test_linucb_agent.py    # LinUCB & Segment-Separated LinUCB test suite
 ```
-
----
-
-## 📚 Study Guides & Built-in Documentation
-
-Every phase of the project's development, mathematical proofs, code examples, and debugging logs are detailed in the `interview/` directory:
-
-### Day 1: Simulated Market & Ground-Truth
-- [Day 1 Study Guide (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day1/day1_README.md): Mathematical derivation of optimal pricing for linear demand ($p^* = a/2b$), expected revenue modeling, and the sigmoid-probability bridge.
-- [Day 1 Foundations & Step-by-Step (HTML)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day1/day1_foundations_and_stepbystep.html): Step-by-step logic for setting up numerical and analytical optimization.
-- [6-Day Build Plan (HTML)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day1/pricing_bandit_6day_build_plan.html): Comprehensive build architecture plan.
-
-### Day 2: Core Bandits & Reward-Scale Mismatch
-- [Day 2 Study Guide (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day2/README.md): Implementation details for Epsilon-Greedy and UCB1, exploring points vs. intervals, and the cold-start phase.
-- [Reward-Scale Mismatch Bug Report (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day2/bug_Reward_Scale_Mismatch.md): Analysis of the UCB1 freezing failure mode where unscaled exploration bounds were drowned out by the revenue scale, and the mathematical resolution.
-- [Day 2 Field Guide (HTML)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day2/day2.html): Field guide companion for baseline agents.
-
-### Day 3: Thompson Sampling & Bayesian Bandits
-- [Day 3 Study Guide (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day3/day3_README.md): Conjugate prior derivation for Beta-Bernoulli updates, Thompson Sampling's decision rule, and proof of immunity to freezing bugs.
-- [Day 3 Field Guide (HTML)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day3/day3.html): Detailed field guide for Bayesian bandit methods.
-
-### Day 4: Contextual Bandits & Exploration Collapse
-- [Day 4 Study Guide (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day4/day4_README.md): Linear reward assumption, Ridge Regression derivation, Joint vs. Segment-Separated LinUCB trade-offs.
-- [LinUCB Exploration Failures Bug Report (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day4/bug_LinUCB_Exploration_Failures.md): Investigation into cross-segment poisoning (where student zero-reward pulls contaminated professional parameter matrices, locking out high-price arms) and feature-scale/reward-scale mismatches.
-- [Day 4 Implementation Plan (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day4/implementation_plan.md): Architectural layout for implementing Segment-Separated sub-agents.
-- [Day 4 Field Guide (HTML)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day4/day4.html): Companion field guide for contextual linear models.
-
-### Day 5: Regret Analysis & Sensitivity Sweeps
-- [Day 5 Study Guide (Markdown)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day5/day5_README.md): Sub-linear vs. linear regret growth metrics, price-convergence diagnostics, and noise/grid-density sensitivity analyses.
-- [Day 5 Field Guide (HTML)](file:///c:/Users/dwive/OneDrive/Desktop/Vantage/interview/day5/day5(1).html): Companion field guide for convergence metrics.
 
 ---
 
