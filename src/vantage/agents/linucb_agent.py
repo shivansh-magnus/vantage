@@ -144,7 +144,7 @@ class SegmentSeparatedLinUCB(BanditAgent):
         }
 
     def _get_segment_and_sub_context(
-        self, context: Union[CustomerContext, np.ndarray]
+        self, context: Union[CustomerContext, np.ndarray, dict]
     ) -> Tuple[str, np.ndarray]:
         """
         Parses the context input (either CustomerContext or numpy vector) and returns
@@ -183,14 +183,19 @@ class SegmentSeparatedLinUCB(BanditAgent):
         )
         return segment, sub_context
 
-    def select_arm(self, context: Optional[np.ndarray] = None) -> int:
+    def select_arm(
+        self, context: Optional[Union[CustomerContext, np.ndarray, dict]] = None
+    ) -> int:
         if context is None:
             raise ValueError("SegmentSeparatedLinUCB requires context.")
         segment, sub_context = self._get_segment_and_sub_context(context)
         return self.agents[segment].select_arm(sub_context)
 
     def update(
-        self, arm_idx: int, reward: float, context: Optional[np.ndarray] = None
+        self,
+        arm_idx: int,
+        reward: float,
+        context: Optional[Union[CustomerContext, np.ndarray, dict]] = None,
     ) -> None:
         if context is None:
             raise ValueError("SegmentSeparatedLinUCB requires context.")

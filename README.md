@@ -34,7 +34,7 @@ Our continuous bounds solver finds the optimal expected revenue peak for each se
 
 The plot below shows how the demand (purchase probability) decays as price rises, and how the expected revenue curves peak at different prices depending on the segment:
 
-![Demand & Expected Revenue Curves](runs/day1_demand_curves.png)
+![Demand & Expected Revenue Curves](runs/demand_curves.png)
 
 ---
 
@@ -56,7 +56,7 @@ We track each agent's greedy pricing beliefs over time against the segment-speci
 
 Additionally, standard Joint LinUCB was patched to prevent **cross-segment poisoning**, which occurs when zero-reward pulls from price-sensitive students contaminate the shared parameter matrices of high-price arms, permanently locking professionals out. The isolated segment design of Segment-Separated LinUCB avoids this entirely.
 
-![Price Convergence by Segment](runs/day5_price_convergence.png)
+![Price Convergence by Segment](runs/price_convergence.png)
 
 ---
 
@@ -65,7 +65,63 @@ We verify the robustness of convergence speed across two sweeps:
 * **Label Noise Sweep**: We inject binary symmetric label noise ($p_{\text{noise}} \in \{0.0, 0.1, 0.25\}$) into purchase outcomes. As noise increases, convergence rounds rise because the signal-to-noise ratio drops, requiring more pulls to distinguish the true expected revenue peak.
 * **Price Grid Density Sweep**: We expand the price grid from 10 arms to 20 arms (making the action space twice as dense). The convergence speed slows down for Joint LinUCB because the exploration search space is larger. Non-contextual agents remain unable to converge across segments.
 
-![Agent Convergence Sensitivity Sweeps](runs/day5_sensitivity_sweep.png)
+![Agent Convergence Sensitivity Sweeps](runs/sensitivity_sweep.png)
+
+---
+
+## ⚡ Production Online-Learning API
+
+Vantage serves the trained Joint LinUCB pricing policy as a real-time web service using **FastAPI** and **Uvicorn**, providing online learning from live traffic.
+
+### 🔌 API Endpoints Contract
+
+#### 1. Price Request: `GET /price`
+Recommends a price for an incoming customer context. Generates a unique transaction `request_id` to correlate the offer with a subsequent purchase outcome.
+
+* **Parameters**:
+  - `segment` (string, required): `student`, `professional`, or `default`
+  - `day_type` (string, required): `weekday` or `weekend`
+  - `competitor_price` (float, required): Continuous competitor price in dollars.
+* **Sample Request**:
+  ```bash
+  curl "http://127.0.0.1:8000/price?segment=student&day_type=weekday&competitor_price=15.0"
+  ```
+* **Sample Response (200 OK)**:
+  ```json
+  {
+    "price": 15.0,
+    "arm_id": 1,
+    "request_id": "c1f7b77b-891d-4009-847e-7bc89cd9086e"
+  }
+  ```
+
+#### 2. Outcome Report: `POST /outcome`
+Reports purchase outcomes to trigger model parameter updates.
+
+* **Payload**:
+  - `request_id` (string, required): Transaction UUID returned by `/price`.
+  - `purchased` (boolean, required): `true` if purchased, `false` otherwise.
+* **Sample Request**:
+  ```bash
+  curl -X POST "http://127.0.0.1:8000/outcome" \
+    -H "Content-Type: application/json" \
+    -d '{"request_id": "c1f7b77b-891d-4009-847e-7bc89cd9086e", "purchased": true}'
+  ```
+* **Sample Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "message": "Outcome processed. Agent updated for arm 1 (price $15.00) with reward $15.00."
+  }
+  ```
+
+### 🛡️ Production Design Decisions
+
+#### 1. Concurrency Safety
+The Ridge regression calculations and state updates in `LinUCB` (`A` matrix inversion and updating) are non-atomic. To protect against concurrent outcome reports causing race conditions (lost updates), the API wraps all updates inside an `asyncio.Lock` block.
+
+#### 2. State Persistence Across Restarts
+To ensure learning progress survives container restarts or free-tier sleep cycles, the agent's parameters are serialized to `data/agent_state.pkl` using `pickle` atomic writes. Snapshots are saved automatically every 10 updates and reloaded at startup.
 
 ---
 
@@ -73,6 +129,10 @@ We verify the robustness of convergence speed across two sweeps:
 
 ```filepath
 Vantage/
+├── app/
+│   ├── main.py                 # FastAPI application routes
+│   ├── schemas.py              # Pydantic request/response schemas
+│   └── state.py                # Concurrency locks and persistence management
 ├── src/vantage/
 │   ├── schemas.py              # Customer context & data model schemas
 │   ├── tools/
@@ -88,12 +148,14 @@ Vantage/
 │   ├── evaluate_bandit_agents.py  # Regret evaluation script
 │   ├── evaluate_linucb.py         # Convergence evaluation script
 │   └── generate_ground_truth.py   # Ground-truth table compiler
-└── tests/
-    ├── test_simulator.py       # Simulator validation tests
-    ├── test_optimization.py    # SciPy optimizer tests
-    ├── test_bandit_agents.py   # EpsilonGreedy & UCB1 test suite
-    ├── test_thompson_sampling.py# Thompson Sampling test suite
-    └── test_linucb_agent.py    # LinUCB & Segment-Separated LinUCB test suite
+├── tests/
+│   ├── test_api.py             # FastAPI API integration tests
+│   ├── test_simulator.py       # Simulator validation tests
+│   ├── test_optimization.py    # SciPy optimizer tests
+│   ├── test_bandit_agents.py   # EpsilonGreedy & UCB1 test suite
+│   ├── test_thompson_sampling.py# Thompson Sampling test suite
+│   └── test_linucb_agent.py    # LinUCB & Segment-Separated LinUCB test suite
+└── render.yaml                 # Render deployment configuration
 ```
 
 ---
@@ -122,6 +184,13 @@ Execute the unit and integration test suite to verify the mathematical updates, 
 ```bash
 pytest
 ```
+
+### Running the API locally
+Start the local development server:
+```bash
+uvicorn app.main:app --reload
+```
+You can view the interactive API docs at `http://127.0.0.1:8000/docs`.
 
 ### Running Evaluations
 Run the full 5-way simulation harness to perform regret analysis, convergence diagnostics, and sensitivity sweeps, generating the comparison plots under `runs/`:

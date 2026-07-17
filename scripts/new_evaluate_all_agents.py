@@ -154,6 +154,12 @@ def run_convergence_simulation(
     history = {name: [] for name in target_contexts}
     rounds = []
 
+    # Record believed-best price at round 0 (baseline before seeing data)
+    rounds.append(0)
+    for name, eval_ctx in target_contexts.items():
+        price = get_greedy_price(agent, agent_class, eval_ctx, prices)
+        history[name].append(price)
+
     for r in range(1, n_rounds + 1):
         ctx = sim.sample_context()
         x = ctx.to_vector()

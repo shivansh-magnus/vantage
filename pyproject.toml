@@ -22,6 +22,7 @@ vantage = "vantage.cli:app"
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.1.0",
+    "httpx>=0.27.0",
 ]
 
 [build-system]
@@ -33,3 +34,7 @@ packages = ["src/vantage"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
+
+[tool.pyright]
+extraPaths = ["."]
+
