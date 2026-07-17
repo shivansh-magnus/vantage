@@ -34,7 +34,7 @@ Our continuous bounds solver finds the optimal expected revenue peak for each se
 
 The plot below shows how the demand (purchase probability) decays as price rises, and how the expected revenue curves peak at different prices depending on the segment:
 
-![Demand & Expected Revenue Curves](https://raw.githubusercontent.com/shivansh-magnus/vantage/main/runs/day1_demand_curves.png)
+![Demand & Expected Revenue Curves](runs/day1_demand_curves.png)
 
 ---
 
@@ -45,7 +45,7 @@ $$\text{CumRegret}(T) = \sum_{t=1}^{T} \left( R(p^*_t) - R(p_t) \right)$$
 * **Linear Regret Growth (Baseline Bandits)**: Epsilon-Greedy, UCB1, and Thompson Sampling are non-contextual. They are forced to learn a single "global compromise price" across all incoming customer contexts. As a result, they accrue constant linear regret on the Student and Professional segments because they cannot personalize.
 * **Sub-linear Regret Growth (Contextual Bandits)**: Both Joint LinUCB and Segment-Separated LinUCB are context-aware. They learn to personalize the price to the customer context vector. Their cumulative regret curves flatten logarithmically (sub-linear regret) as they converge on the optimal policy, saving nearly **10x** in lost revenue over 15,000 rounds.
 
-![5-Way Cumulative Regret Comparison](https://raw.githubusercontent.com/shivansh-magnus/vantage/main/runs/day4_5way_regret_comparison.png)
+![5-Way Cumulative Regret Comparison](runs/day4_5way_regret_comparison.png)
 
 ---
 
@@ -56,7 +56,7 @@ We track each agent's greedy pricing beliefs over time against the segment-speci
 
 Additionally, standard Joint LinUCB was patched to prevent **cross-segment poisoning**, which occurs when zero-reward pulls from price-sensitive students contaminate the shared parameter matrices of high-price arms, permanently locking professionals out. The isolated segment design of Segment-Separated LinUCB avoids this entirely.
 
-![Price Convergence by Segment](https://raw.githubusercontent.com/shivansh-magnus/vantage/main/runs/day5_price_convergence.png)
+![Price Convergence by Segment](runs/day5_price_convergence.png)
 
 ---
 
@@ -65,7 +65,7 @@ We verify the robustness of convergence speed across two sweeps:
 * **Label Noise Sweep**: We inject binary symmetric label noise ($p_{\text{noise}} \in \{0.0, 0.1, 0.25\}$) into purchase outcomes. As noise increases, convergence rounds rise because the signal-to-noise ratio drops, requiring more pulls to distinguish the true expected revenue peak.
 * **Price Grid Density Sweep**: We expand the price grid from 10 arms to 20 arms (making the action space twice as dense). The convergence speed slows down for Joint LinUCB because the exploration search space is larger. Non-contextual agents remain unable to converge across segments.
 
-![Agent Convergence Sensitivity Sweeps](https://raw.githubusercontent.com/shivansh-magnus/vantage/main/runs/day5_sensitivity_sweep.png)
+![Agent Convergence Sensitivity Sweeps](runs/day5_sensitivity_sweep.png)
 
 ---
 
